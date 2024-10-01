@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -14,24 +15,28 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.mv.appbateria2.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var texto: TextView
-    private lateinit var batteryReceiver: BatteryReceiver
+    private lateinit var binding: ActivityMainBinding
+    lateinit var texto: TextView
+    private lateinit var pendingIntent: PendingIntent
+    private lateinit var batteryReceiver: BroadcastReceiver
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        texto = findViewById(R.id.txtNivel)
-        batteryReceiver = BatteryReceiver()
+        texto = binding.txtNivel
+        //batteryReceiver = BatteryReceiver()
 
         // Crea un Intent para BatteryReceiver
         val batteryIntent = Intent(this, BatteryReceiver::class.java)
 
         // Crea un PendingIntent que será usado para lanzar el BroadcastReceiver
-        val pendingIntent = PendingIntent.getBroadcast(
+        pendingIntent = PendingIntent.getBroadcast(
             this,
             0,
             batteryIntent,
@@ -39,21 +44,28 @@ class MainActivity : AppCompatActivity() {
         )
 
         // Registrar el Broadcast para actualizar el nivel de la batería
-        val batteryStatusIntentFilter = IntentFilter("com.example.UPDATE_BATTERY")
-        registerReceiver(object : BroadcastReceiver() {
+        batteryReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
-                val level = intent?.getIntExtra("level", -1) ?: -1
-                texto.text = "$level%"
+                val level = intent?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
+                texto.text = "$level%"  // Display battery level
+                Log.d("MainActivity", "Nivel de batería: $level%")
             }
-        }, batteryStatusIntentFilter, RECEIVER_NOT_EXPORTED)
+        }
+
+        // Registra el receptor para ACTION_BATTERY_CHANGED
+        val intentFilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+        registerReceiver(batteryReceiver, intentFilter)
+
     }
 
     override fun onResume() {
         super.onResume()
-        // Crear filtro de intención para el estado de la batería
-        val intentFilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
-        sendBroadcast(Intent(this, BatteryReceiver::class.java))
-        Log.d("MainActivity", "BroadcastReceiver registrado satisfactoriamente")
+        try {
+            pendingIntent.send()
+            Log.d("MainActivity","BroadcastReceiver registrado satisfactoriamente")
+        } catch (e: PendingIntent.CanceledException) {
+            Log.e("MainActivity", "Error al enviar PendingIntent: ${e.message}")
+        }
     }
 
     override fun onPause() {
