@@ -37,7 +37,7 @@ class MainActivity : AppCompatActivity() {
         // Crear un Intent para recibir el estado de la batería
         val intent = Intent(this, BatteryReceiver::class.java)
 
-        // Crear un PendingIntent que envía la transmisión a BateryMonitor
+        // Crear un PendingIntent que envía la transmisión a BateryReceiver
         val pendingIntent = PendingIntent.getBroadcast(
             this,
             0,
@@ -45,10 +45,7 @@ class MainActivity : AppCompatActivity() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Registrar el receptor para la intención de cambio de batería
         val intentFilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
-
-        // Usar el PendingIntent para registrar el BroadcastReceiver
         registerReceiver(batteryReceiver, intentFilter)
 
         Log.d("Aplicación", "PendingIntent para BroadcastReceiver registrado satisfactoriamente")
@@ -56,7 +53,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        // Desregistrar el receptor cuando la app no está visible
         unregisterReceiver(batteryReceiver)
         Log.d("Aplicación", "PendingIntent para BroadcastReceiver desregistrado satisfactoriamente")
     }
